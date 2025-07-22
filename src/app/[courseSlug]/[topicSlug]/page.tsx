@@ -1,11 +1,39 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+export const dynamic = 'force-dynamic';
+
+export async function generateStaticParams() {
+  const courses = await prisma.course.findMany({
+    include: {
+      chapters: {
+        include: {
+          topics: true,
+        },
+      },
+    },
+  });
+
+  const paths = courses.flatMap(course =>
+    course.chapters.flatMap(chapter =>
+      chapter.topics.map(topic => ({
+        courseSlug: course.slug,
+        topicSlug: topic.slug,
+      }))
+    )
+  );
+
+  return paths;
+}
 
 export default async function TopicPage({ params }: { params: { courseSlug: string; topicSlug: string } }) {
+  const { courseSlug, topicSlug } = await params;
   // Find the course and topic
   const course = await prisma.course.findUnique({
-    where: { slug: params.courseSlug },
+    where: { slug: courseSlug },
     include: {
       chapters: {
         orderBy: { order: "asc" },
@@ -26,7 +54,7 @@ export default async function TopicPage({ params }: { params: { courseSlug: stri
     const ch = course.chapters[cIdx];
     for (let tIdx = 0; tIdx < ch.topics.length; tIdx++) {
       const t = ch.topics[tIdx];
-      if (t.slug === params.topicSlug) {
+      if (t.slug === topicSlug) {
         foundTopic = t;
         chapterIdx = cIdx;
         topicIdx = tIdx;
@@ -47,19 +75,21 @@ export default async function TopicPage({ params }: { params: { courseSlug: stri
   return (
     <div className="container mx-auto max-w-2xl p-4 sm:p-8">
       <nav className="mb-4 text-sm text-muted-foreground">
-        <Link href="/">Home</Link> &gt; {" "}
-        <Link href={`/${course.slug}`}>{course.title}</Link> &gt; {" "}
+        <Link href="/">Home</Link> &gt;{" "}
+        <Link href={`/${course.slug}`}>{course.title}</Link> &gt;{" "}
         <span>{foundTopic.title}</span>
       </nav>
       <header className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{foundTopic.title}</h1>
         <p className="text-muted-foreground mb-2">Chapter: {chapter?.title}</p>
       </header>
-      <article className="prose prose-neutral dark:prose-invert mb-8">
-        {foundTopic.content}
+      <article className="prose prose-neutral dark:prose-invert max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {foundTopic.content}
+        </ReactMarkdown>
       </article>
       {foundTopic.hasCodeEditor && (
-        <div className="mb-8 p-4 border rounded-lg bg-muted">
+        <div className="mt-8 p-4 border rounded-lg bg-muted">
           <p className="mb-2 font-semibold">Interactive Code Editor (coming soon)</p>
           {/* Code editor will go here */}
         </div>
