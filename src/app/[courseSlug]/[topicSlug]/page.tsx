@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { MarkCompleteButton } from "@/components/progress/mark-complete";
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,7 @@ export default async function TopicPage({ params }: { params: { courseSlug: stri
           {foundTopic.content}
         </ReactMarkdown>
       </article>
+      <MarkCompleteButton topicId={foundTopic.id} courseId={course.id} />
       {foundTopic.hasCodeEditor && (
         <div className="mt-8 p-4 border rounded-lg bg-muted">
           <p className="mb-2 font-semibold">Interactive Code Editor (coming soon)</p>
