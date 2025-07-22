@@ -1,0 +1,76 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+// User model
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  password  String?  // If using credentials, else NextAuth can manage
+  isAdmin   Boolean  @default(false)
+  progress  Progress[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Course model
+model Course {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  description String
+  imageUrl    String?
+  chapters    Chapter[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Chapter model
+model Chapter {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  topics    Topic[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Topic (Lesson) model
+model Topic {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String
+  order       Int
+  content     String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id])
+  chapterId   String
+  hasCodeEditor Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  progress    Progress[]
+}
+
+// Progress model
+model Progress {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  topic     Topic    @relation(fields: [topicId], references: [id])
+  topicId   String
+  completed Boolean  @default(false)
+  completedAt DateTime?
+  // Optionally, add course/chapter for faster queries
+  // course   Course?  @relation(fields: [courseId], references: [id])
+  // courseId String?
+  // chapter  Chapter? @relation(fields: [chapterId], references: [id])
+  // chapterId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
